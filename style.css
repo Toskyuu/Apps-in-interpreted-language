@@ -3,44 +3,47 @@ body{
     margin: 0;
 }
 #sun{
-    border-radius: 10%;
+    border-radius: 100%;
     background-color: rgb(255, 221, 0);
-    min-height: 50px;
-    min-width: 50px;
+    min-height: 100px;
+    min-width: 100px;
     height: 20vh;
     width: 20vh;
-    position: relative;
-    margin: 3vh;
+    position: absolute;
+    margin-top: 3vh;
+    margin-left: 3vh;
 }
-.cloud{ 
-    margin-top:70px;
-    margin: 30vh;
-    width:350px;
-    height:120px;
-    background:#ECEFF1;
-    box-shadow: 10px 10px rgba(0,0,0,0.2);
-    border-radius:100px;
-    float: left;
+.cloud {
+    position: absolute;
+	width: 350px; 
+    height: 120px;
+	background: white;
+	border-radius: 100px;
+	margin: 100px 0 0 100px;
+}
 
-}.cloud::after, .cloud::before{
-     content:"";
-     position:relative;
-     display:inline-block;
-     background:inherit;
-     border-radius:inherit;
- }
- .cloud::after{
-     width:100px;
-     height:100px;
-     top:-220px;
-     left:50px;
- }
- .cloud::before{
-     width:180px;
-     height:180px;
-     top: -70px;
-     left:130px;
- }
+.cloud:after, .cloud:before {
+	content: '';
+	position: absolute;
+	background: white;
+}
+
+.cloud:after {
+	width: 100px; height: 100px;
+	top: -50px; left: 50px;
+	
+	border-radius: 100px;
+	-webkit-border-radius: 100px;
+	-moz-border-radius: 100px;
+}
+
+.cloud:before {
+	width: 180px; height: 180px;
+	top: -90px; right: 50px;
+	border-radius: 200px;
+	-webkit-border-radius: 200px;
+	-moz-border-radius: 200px;
+}
 #road{
     background-color: #232323;
     height: 200px;
@@ -57,12 +60,7 @@ body{
     border-bottom-style: dashed;
     border-top-style: dashed;
     border-width: 6px;
-    border-color: white;
+    border-color: #dcdcdc;
     margin-top: 20px;
 }
 
-#bus{
-    position: absolute;
-    width: 400px;
-    height: 100px;
-}
