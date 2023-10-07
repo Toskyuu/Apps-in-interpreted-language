@@ -33,16 +33,12 @@ body{
 	top: -50px; left: 50px;
 	
 	border-radius: 100px;
-	-webkit-border-radius: 100px;
-	-moz-border-radius: 100px;
 }
 
 .cloud:before {
 	width: 180px; height: 180px;
 	top: -90px; right: 50px;
 	border-radius: 200px;
-	-webkit-border-radius: 200px;
-	-moz-border-radius: 200px;
 }
 #road{
     background-color: #232323;
