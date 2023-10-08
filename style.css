@@ -63,9 +63,169 @@ body{
 #bus{
     position: absolute;
     top: 45%;
+    left: 30%;
+    width: 600px;
+    height: 200px;
+    background-color: #FCD800;
+    border-top-right-radius: 20px;
+    border-top-left-radius: 20px;
+    border-bottom-right-radius: 8%;    
+}
+
+#front{
+    position: relative;
+    float: left;
+    left: -16%;
+    height: 0;
+	width: 40px;
+	border-right: 0px solid transparent;
+	border-left: 100px solid transparent;
+	border-bottom: 200px solid #FCD800;
+    border-bottom-left-radius: 10%;
+}
+
+#engine{
+    position: relative;
+    width: 55px;
+    height: 100px;
+    background-color: #FCD800;
+    float: left;
+    top: 50%;
+    left: -40%;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 15px;
+}
+
+#frontGlass{
+    position: relative;
+    width: 0;
+	height: 0;
+	border-bottom: 100px solid #56887d;
+	border-left: 55px solid transparent;
+    border-bottom-right-radius: 20px;
+	left: -41%;
+    float: left;
+}
+
+.sideGlass{
+    position: absolute;
+    height: 100px;
+    width: 50px;
+    border-radius: 5px;
+    background-color: #56887d;
+    float: left;
+}
+
+#sD1{
+    top: 2%;
+    left: 5%;
+}
+
+#sD2{
+    top: 2%;
+    left: 15%;
+}
+
+#sD3{
+    top: 2%;
+    left: 25%;
+}
+
+#sD4{
+    top: 2%;
+    left: 35%;
+}
+
+#sD5{
+    top: 2%;
+    left: 45%;
+}
+
+#sD6{
+    top: 2%;
+    left: 55%;
+}
+
+#sD7{
+    top: 2%;
+    left: 65%;
+}
+
+#sD8{
+    top: 2%;
+    left: 75%;
+}
+
+#backGlass{
+    position: absolute;
+    height: 100px;
+    width: 60px;
+    border-radius: 5px;
+    background-color: #56889f;
+    float: left;
+    top: 3%;
+    left: 87%;
+}
+
+.tyre{
+    position: relative;
+    border-radius: 50%;
+    background: #000000;
+    height: 100px;
+    width: 100px;
+    float: left;
+}
+
+.rim{
+    position: relative;
+    border-radius: 50%;
+    background-color: #676767;
+    top: 15%;
+    left: 15%;
+    height: 70px;
+    width: 70px;
+}
+
+.rimScrew {
+    position: relative;
+    background-color: #232323;
+    border-radius: 50%;   
+    height: 15px;
+    width: 15px;
+    float: left
+}
+
+.rS1 {
+    top: 25%;
+    left: 10%;
+}
+
+.rS2 {
+    top: 8%;
+    left: 23%;
+}
+
+.rS3 {
+    top: 35%;
+    left: 29%;
+}
+
+.rS4 {
+    top: 65%;
+    left: -5%;
+}
+
+.rS5 {
+    top: 40%;
+    left: 17%;
+}
+
+#leftWheel{
+    top: 70%;
+    left: -45%;
+}
+
+#rightWheel{
+    top: 70%;
     left: 20%;
-    width: 500px;
-    height: 180px;
-    background-color: yellow;
-    border-radius: 8%;
 }
