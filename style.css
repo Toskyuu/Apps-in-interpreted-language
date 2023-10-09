@@ -29,15 +29,18 @@ body{
 }
 
 .cloud:after {
-	width: 100px; height: 100px;
-	top: -50px; left: 50px;
-	
+	width: 100px; 
+    height: 100px;
+	top: -50px; 
+    left: 50px;
 	border-radius: 100px;
 }
 
 .cloud:before {
-	width: 180px; height: 180px;
-	top: -90px; right: 50px;
+	width: 180px; 
+    height: 180px;
+	top: -90px; 
+    right: 50px;
 	border-radius: 200px;
 }
 #road{
