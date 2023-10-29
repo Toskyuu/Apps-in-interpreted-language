@@ -1,71 +1,74 @@
 "use strict";
 let todoList = []; //declares a new array for Your todo list
+const BASE_URL =
+  "https://api.jsonbin.io/v3/b/653ed6e354105e766fc8cc29?meta=false ";
+const SECRET_KEY =
+  "$2a$10$KnEwck7Jzagu.qYCHWGxiuHr8pWNLUvcRwmBNmsllGMk.wS3Etfge";
 
-let updateJSONbin = function() {
-    $.ajax({
+
+$.ajax({
+  // copy Your bin identifier here. It can be obtained in the dashboard
   url: BASE_URL,
-  type: 'PUT',
-  headers: { //Required only if you are trying to access a private bin
-    'X-Master-Key': SECRET_KEY
+  type: "GET",
+  headers: {
+    //Required only if you are trying to access a private bin
+    "X-Master-Key": SECRET_KEY,
   },
-  contentType: 'application/json',
-  data: JSON.stringify(todoList),
+
   success: (data) => {
     console.log(data);
+    todoList = data;
   },
   error: (err) => {
     console.log(err.responseJSON);
-  }
-});}
-
-const BASE_URL = "https://api.jsonbin.io/v3/b/653e560212a5d37659920b56";
-const SECRET_KEY = "$2a$10$J7KAJRumTXnF9Ycv/CVolOMmmxGvECJv.c8EtI0SUIMU7WT5Lzk12";
-$.ajax({
- // copy Your bin identifier here. It can be obtained in the dashboard
- url: BASE_URL,
- type: 'GET',
- headers: { //Required only if you are trying to access a private bin
-   'X-Master-Key': SECRET_KEY
-},
- success: (data) => {
-   console.log(data);
-   todoList = data;
- },
- error: (err) => {
-   console.log(err.responseJSON);
- }
+  },
 });
 
-let updateTodoList = function () {
-  let todoListDiv = document.getElementById("todoListView");
 
-  
-  //add all elements
-let filterInput = document.getElementById("inputSearch");   
-for (let todo in todoList) {
-  if (
-    (filterInput.value == "") ||
-    (todoList[todo].title.includes(filterInput.value)) ||
-    (todoList[todo].description.includes(filterInput.value))
-  ) {
-    let newElement = document.createElement("p");
-    let newContent = document.createTextNode(todoList[todo].title + " " +
-                                             todoList[todo].description);
-    newElement.appendChild(newContent);
-    todoListDiv.appendChild(newElement);
-  }
-}
-
-  let newDeleteButton = document.createElement("input");
-  newDeleteButton.type = "button";
-  newDeleteButton.value = "x";
-  newDeleteButton.addEventListener("click", function () {
-    deleteTodo(todo);
+let updateJSONbin = function () {
+  $.ajax({
+    url:  BASE_URL,
+    type: "PUT",
+    headers: {
+      //Required only if you are trying to access a private bin
+      "X-Master-Key": SECRET_KEY,
+    },
+    contentType: "application/json",
+    
+    data: JSON.stringify(todoList),
+    success: (data) => {
+      console.log(data);
+    },
+    error: (err) => {
+      console.log(err.responseJSON);
+    },
   });
+};
+
+
+let updateTodoList = function () {
+  let todoTable = document.getElementById("todoTableView");
+
+  //add all elements
+  let filterInput = document.getElementById("inputSearch");
+  for (let todo in todoList) {
+    if (
+      filterInput.value == "" ||
+      todoList[todo].title.includes(filterInput.value) ||
+      todoList[todo].description.includes(filterInput.value)
+    ) {
+      let newElement = document.createElement("p");
+      let newContent = document.createTextNode(
+        todoList[todo].title + " " + todoList[todo].description
+      );
+      newElement.appendChild(newContent);
+      todoTable.appendChild(newElement);
+    }
+  }
 
   //remove all elements
-  while (todoListDiv.firstChild) {
-    todoListDiv.removeChild(todoListDiv.firstChild);
+  while (todoTable.firstChild) {
+    todoTable.removeChild(todoTable.firstChild);
   }
 
   //add all elements
@@ -76,22 +79,26 @@ for (let todo in todoList) {
     newDeleteButton.addEventListener("click", function () {
       deleteTodo(todo);
     });
-    let newElement = document.createElement("div");
+
+    let newElement = document.createElement("tr");
+    for (let field in todo){}
     let newContent = document.createTextNode(
-      todoList[todo].title + " " + todoList[todo].description
+      "<tr>" +
+      "<th>" + todoList[todo].title + "</th> " + todoList[todo].description
+      + "</tr>"
     );
+
     newElement.appendChild(newContent);
-    todoListDiv.appendChild(newElement);
+    todoTable.appendChild(newElement);
     newElement.appendChild(newDeleteButton);
   }
-  updateJSONbin;
 };
 
 setInterval(updateTodoList, 1000);
 
 let deleteTodo = function (index) {
   todoList.splice(index, 1);
-  updateJSONbin;
+  updateJSONbin();
 };
 
 let addTodo = function () {
@@ -115,11 +122,7 @@ let addTodo = function () {
   //add item to the list
   todoList.push(newTodo);
   window.localStorage.setItem("todos", JSON.stringify(todoList));
+  updateJSONbin();
 };
-
-
-
-
-
 
 
