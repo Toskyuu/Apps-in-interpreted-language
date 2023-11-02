@@ -1,0 +1,30 @@
+body {
+  color: #ededed;
+  background-color: #232323;
+}
+
+.main-container {
+  background-color: #002e5c; 
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 20px;
+  margin-bottom: 20px; 
+  min-height: 80vh; 
+}
+
+
+h1 {
+  color: #efdb00; 
+  font-size: 56px;
+  font-weight: bold;
+  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  text-shadow: 10px 10px 20px rgba(0, 0, 0, 0.663);
+}
+
+.form-label {
+  font-size: 25px;
+}
+
+td {
+  vertical-align: middle;
+}

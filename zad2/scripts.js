@@ -43,45 +43,42 @@ let updateJSONbin = function () {
   });
 };
 
-let createTableHeader = function (todoTable) {
-  let header = todoTable.createTHead();
-  let newRow = todoTable.insertRow(0);
-
-  let newCellTitle = newRow.insertCell();
-  newCellTitle.innerHTML = "Title";
-
-  let newCellDesc = newRow.insertCell();
-  newCellDesc.innerHTML = "Description";
-
-  let newCellPlace = newRow.insertCell();
-  newCellPlace.innerHTML = "Place";
-
-  let newCellDate = newRow.insertCell();
-  newCellDate.innerHTML = "Due Date";
-
-  let newCellDel = newRow.insertCell();
-  newCellDel.innerHTML = "Delete";
-};
-
 let updateTodoList = function () {
   let todoTable = document.getElementById("todoTableView");
+
   //remove all elements
   while (todoTable.firstChild) {
     todoTable.removeChild(todoTable.firstChild);
   }
 
-  createTableHeader(todoTable);
-
   //add all elements
   let filterInput = document.getElementById("inputSearch");
+  let dateStartFilterInput = document.getElementById("startDate").value;
+  let dateEndFilterInput = document.getElementById("endDate").value;
+
   for (let todo in todoList) {
+    const todoDueDate = new Date(todoList[todo].dueDate);
+    const inputValue = filterInput.value.toLowerCase();
+    const title = todoList[todo].title.toLowerCase();
+    const description = todoList[todo].description.toLowerCase();
+    const place = todoList[todo].place.toLowerCase();
+
+    const isTitleMatch = inputValue === "" || title.includes(inputValue);
+    const isDescriptionMatch =
+      inputValue === "" || description.includes(inputValue);
+    const isPlaceMatch = inputValue === "" || place.includes(inputValue);
+    const isStartDateMatch =
+      dateStartFilterInput == "" ||
+      todoDueDate >= new Date(dateStartFilterInput);
+    const isEndDateMatch =
+      dateEndFilterInput == "" || todoDueDate <= new Date(dateEndFilterInput);
+
     if (
-      filterInput.value == "" ||
-      todoList[todo].title.includes(filterInput.value) ||
-      todoList[todo].description.includes(filterInput.value) ||
-      todoList[todo].place.includes(filterInput.value) ||
-      todoList[todo].dueDate.includes(filterInput.value)
+      (isTitleMatch || isDescriptionMatch || isPlaceMatch) &&
+      isStartDateMatch &&
+      isEndDateMatch
     ) {
+      //create html row in table
       let newRow = todoTable.insertRow(-1);
       let newCellTitle = newRow.insertCell();
       let newTextTitle = document.createTextNode(todoList[todo].title);
@@ -97,7 +94,8 @@ let updateTodoList = function () {
       newCellDate.appendChild(newTextDate);
       let newDeleteButton = document.createElement("input");
       newDeleteButton.type = "button";
-      newDeleteButton.value = "x";
+      newDeleteButton.value = "X";
+      newDeleteButton.className = "btn btn-danger";
       newDeleteButton.addEventListener("click", function () {
         deleteTodo(todo);
       });
@@ -106,8 +104,6 @@ let updateTodoList = function () {
     }
   }
 };
-
-setInterval(updateTodoList, 1000);
 
 let deleteTodo = function (index) {
   todoList.splice(index, 1);
@@ -137,3 +133,5 @@ let addTodo = function () {
   window.localStorage.setItem("todos", JSON.stringify(todoList));
   updateJSONbin();
 };
+
+setInterval(updateTodoList, 1000);
