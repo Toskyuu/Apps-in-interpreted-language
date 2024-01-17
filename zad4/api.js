@@ -77,12 +77,15 @@ app.get("/products", async (req, res) => {
     const [rows, fields] = await pool.execute(
       "SELECT P.*, K.nazwa as 'nazwa_kategorii' FROM produkt P JOIN kategoria K ON K.kategoria_id = P.kategoria_id"
     );
-    res.json(rows);
+    return res.json(rows);
   } catch (error) {
-    console.error("Błąd podczas pobierania produktów:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas pobierania produktów",
+      detail: error,
+      instance: req.url,
+    };
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
@@ -94,45 +97,69 @@ app.get("/products/:id", async (req, res) => {
       [productId]
     );
     if (rows.length > 0) {
-      res.json(rows);
+      return res.json(rows);
     } else {
-      res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ error: "Produkt nie znaleziony" });
+      const rfc7807Error = {
+        type: "https://example.com/docs/errors/not-found",
+        title: "Nie znaleziono produktu",
+        instance: req.url,
+      };
+
+      return res.status(StatusCodes.NOT_FOUND).json(rfc7807Error);
     }
   } catch (error) {
-    console.error("Błąd podczas pobierania produktu:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas pobierania produktu",
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
 app.post("/products", validateProduct, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    console.log(errors);
-    return res.status(StatusCodes.BAD_REQUEST).json({ errors: errors.array() });
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/bad-request",
+      title: "Dane produktu są niepoprawne",
+      detail: errors,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.BAD_REQUEST).json(rfc7807Error);
   }
   const newProduct = req.body;
   try {
     const [result] = await pool.query("INSERT INTO produkt SET ?", [
       newProduct,
     ]);
-    res.json({ productId: result.insertId });
+    return res.json({ productId: result.insertId });
   } catch (error) {
-    console.error("Błąd podczas dodawania produktu:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas dodawania produktu",
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
 app.put("/products/:id", validateProduct, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    console.log(errors);
-    return res.status(StatusCodes.BAD_REQUEST).json({ errors: errors.array() });
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/bad-request",
+      title: "Dane produktu są niepoprawne",
+      detail: errors,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.BAD_REQUEST).json(rfc7807Error);
   }
 
   const productId = req.params.id;
@@ -143,21 +170,29 @@ app.put("/products/:id", validateProduct, async (req, res) => {
       [productId]
     );
     if (existingProducts.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ error: "Produkt o podanym identyfikatorze nie istnieje" });
+      const rfc7807Error = {
+        type: "https://example.com/docs/errors/not-found",
+        title: "Produkt o podanym identyfikatorze nie istnieje",
+        instance: req.url,
+      };
+
+      return res.status(StatusCodes.NOT_FOUND).json(rfc7807Error);
     }
 
     await pool.query(`UPDATE produkt SET ? WHERE produkt_id = ?`, [
       updatedProduct,
       productId,
     ]);
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (error) {
-    console.error("Błąd podczas aktualizacji produktu:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas edytowania produktu",
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
@@ -165,12 +200,16 @@ app.put("/products/:id", validateProduct, async (req, res) => {
 app.get("/categories", async (req, res) => {
   try {
     const [rows, fields] = await pool.execute("SELECT * FROM kategoria");
-    res.json(rows);
+    return res.json(rows);
   } catch (error) {
-    console.error("Błąd podczas pobierania kategorii:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas pobierania kategorii",
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
@@ -178,19 +217,30 @@ app.get("/categories", async (req, res) => {
 app.get("/orders", async (req, res) => {
   try {
     const [rows, fields] = await pool.query("SELECT * FROM zamowienie");
-    res.json(rows);
+    return res.json(rows);
   } catch (error) {
-    console.error("Błąd podczas pobierania zamówień:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas pobierania zamówień",
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
 app.post("/orders", validateOrderPost, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(StatusCodes.BAD_REQUEST).json({ errors: errors.array() });
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/bad-request",
+      title: "Dane zamówienia są niepoprawne",
+      detail: errors,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.BAD_REQUEST).json(rfc7807Error);
   }
   const newOrder = req.body;
 
@@ -198,12 +248,16 @@ app.post("/orders", validateOrderPost, async (req, res) => {
     const [result] = await pool.query("INSERT INTO zamowienie SET ?", [
       newOrder,
     ]);
-    res.json({ orderId: result.insertId });
+    return res.json({ orderId: result.insertId });
   } catch (error) {
-    console.error("Błąd podczas dodawania zamówienia:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas dodawania zamówienia.",
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
@@ -218,17 +272,30 @@ app.patch("/orders/:id", async (req, res) => {
     );
 
     if (existingOrder.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ error: "Zamowienie o podanym identyfikatorze nie istnieje" });
+      const rfc7807Error = {
+        type: "https://example.com/docs/errors/not-found",
+        title: "Zamowienie o podanym identyfikatorze nie istnieje",
+        instance: req.url,
+      };
+
+      return res.status(StatusCodes.NOT_FOUND).json(rfc7807Error);
     }
 
     // SPRAWDZENIE CZY MOZNA ZMIENIC STAN ZAMOWIENIA
-    if (jsonPatchOperations.some(
-      (op) => op.path === "/stan_zamowienia_id" && op.value < existingOrder[0].stan_zamowienia_id)) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Nie można zmienić statusu zamówienia wstecz" });
+    if (
+      jsonPatchOperations.some(
+        (op) =>
+          op.path === "/stan_zamowienia_id" &&
+          op.value < existingOrder[0].stan_zamowienia_id
+      )
+    ) {
+      const rfc7807Error = {
+        type: "https://example.com/docs/errors/bad-request",
+        title: "Nie można zmieniać stanu zamówienia 'wstecz'",
+        instance: req.url,
+      };
+
+      return res.status(StatusCodes.BAD_REQUEST).json(rfc7807Error);
     }
 
     const [cancelledStatusId] = await pool.query(
@@ -238,11 +305,16 @@ app.patch("/orders/:id", async (req, res) => {
 
     // SPRAWDZENIE CZY ZAMOWIENIE JEST ANULOWANE
     if (
-      existingOrder[0].stan_zamowienia_id === cancelledStatusId[0].stan_zamowienia_id
+      existingOrder[0].stan_zamowienia_id ===
+      cancelledStatusId[0].stan_zamowienia_id
     ) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Nie można zmienić statusu anulowanego zamówienia" });
+      const rfc7807Error = {
+        type: "https://example.com/docs/errors/not-found",
+        title: "Nie można zmieniać statusu anulowanego zamówienia",
+        instance: req.url,
+      };
+
+      return res.status(StatusCodes.NOT_FOUND).json(rfc7807Error);
     }
 
     const [approvedStatus] = await pool.query(
@@ -250,7 +322,6 @@ app.patch("/orders/:id", async (req, res) => {
       ["ZATWIERDZONE"]
     );
 
-    // Konwertuj operacje z JSON Patch na format zrozumiały przez fast-json-patch
     const patchedOrder = jsonPatch.applyPatch(
       existingOrder[0],
       jsonPatchOperations
@@ -259,27 +330,32 @@ app.patch("/orders/:id", async (req, res) => {
     // Sprawdź, czy zmieniany jest stan na "ZATWIERDZONE"
     if (
       jsonPatchOperations.some(
-        (op) => op.path === "/stan_zamowienia_id" && op.value === approvedStatus[0].stan_zamowienia_id
+        (op) =>
+          op.path === "/stan_zamowienia_id" &&
+          op.value === approvedStatus[0].stan_zamowienia_id
       )
     ) {
-      // Ustaw kolumnę data_zatwierdzenia na aktualny czas
       patchedOrder.data_zatwierdzenia = new Date();
     }
 
-    // Aktualizuj zamówienie w bazie danych zgodnie z operacjami z JSON Patch
     await pool.query("UPDATE Zamowienie SET ? WHERE zamowienie_id = ?", [
       patchedOrder,
       orderId,
     ]);
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (error) {
-    console.error("Błąd podczas zmiany zamówienia:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas pobierania produktów.",
+      detail: error.message,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
+
 app.get("/orders/status/:id", async (req, res) => {
   const id = req.params.id;
   try {
@@ -287,12 +363,54 @@ app.get("/orders/status/:id", async (req, res) => {
       "SELECT * FROM zamowienie WHERE stan_zamowienia_id = ?",
       [id]
     );
-    res.json(rows);
+    return res.json(rows);
   } catch (error) {
-    console.error("Błąd podczas pobierania zamówień według stanu:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas pobierania zamówień po stanach zamówień",
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
+  }
+});
+app.get("/orders/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const [rows, fields] = await pool.query(
+      "SELECT * FROM zamowienie WHERE zamowienie_id = ?",
+      [id]
+    );
+    return res.json(rows);
+  } catch (error) {
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas pobierania zamówienia",
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
+  }
+});
+app.get("/orders/:name", async (req, res) => {
+  const name = req.params.name;
+  try {
+    const [rows, fields] = await pool.query(
+      "SELECT * FROM zamowienie WHERE nazwa_uzytkownika = ?",
+      [name]
+    );
+    return res.json(rows);
+  } catch (error) {
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas pobierania zamówień po nazwie",
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
@@ -300,37 +418,52 @@ app.get("/orders/status/:id", async (req, res) => {
 app.get("/status", async (req, res) => {
   try {
     const [rows, fields] = await pool.query("SELECT * FROM stan_zamowienia");
-    res.json(rows);
+    return res.json(rows);
   } catch (error) {
-    console.error("Błąd podczas pobierania stanów zamówień:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title: "Wystąpił błąd podczas pobierania stanów zamówień",
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
 //API produktów w zamówieniu
 app.get("/orders/:id/products", async (req, res) => {
-  const id_zamowienia = req.params.id;
+  const orderId = req.params.id;
 
   try {
     const [rows, fields] = await pool.query(
       "SELECT P.*, K.nazwa as 'nazwa_kategorii', Z.ilosc FROM produkt_zamowienie Z JOIN produkt P ON Z.produkt_id = P.produkt_id JOIN kategoria K ON K.kategoria_id = P.kategoria_id WHERE Z.zamowienie_id = ?",
-      [id_zamowienia]
+      [orderId]
     );
 
     if (rows.length > 0) {
-      res.json(rows);
+      return res.json(rows);
     } else {
-      res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ error: "Brak produktów dla danego zamówienia" });
+      const rfc7807Error = {
+        type: "https://example.com/docs/errors/not-found",
+        title:
+          "Brak produktów dla danego zamówienia lub zamówienie nie istnieje",
+        instance: req.url,
+      };
+
+      return res.status(StatusCodes.NOT_FOUND).json(rfc7807Error);
     }
   } catch (error) {
-    console.error("Błąd podczas pobierania produktów dla zamówienia:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title:
+        "Wystąpił błąd podczas pobierania produktów dla zamówienia o ID " +
+        orderId,
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
@@ -346,9 +479,13 @@ app.post("/orders/:id/products", async (req, res) => {
     );
 
     if (existingOrder.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ error: "Zamowienie o podanym identyfikatorze nie istnieje" });
+      const rfc7807Error = {
+        type: "https://example.com/docs/errors/not-found",
+        title: "Zamówienie o podanym ID nie istnieje",
+        instance: req.url,
+      };
+
+      return res.status(StatusCodes.NOT_FOUND).json(rfc7807Error);
     }
 
     const [existingProduct] = await pool.query(
@@ -357,9 +494,13 @@ app.post("/orders/:id/products", async (req, res) => {
     );
 
     if (existingProduct.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ error: "Produkt o podanym identyfikatorze nie istnieje" });
+      const rfc7807Error = {
+        type: "https://example.com/docs/errors/not-found",
+        title: "Produkt o podanym ID nie istnieje",
+        instance: req.url,
+      };
+
+      return res.status(StatusCodes.NOT_FOUND).json(rfc7807Error);
     }
 
     await pool.query("INSERT INTO produkt_zamowienie SET ?", [
@@ -370,12 +511,18 @@ app.post("/orders/:id/products", async (req, res) => {
       },
     ]);
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (error) {
-    console.error("Błąd podczas dodawania produktu do zamówienia:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title:
+        "Wystąpił błąd podczas dodawania produktów dla zamówienia o ID " +
+        orderId,
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
@@ -392,9 +539,13 @@ app.put("/orders/:orderId/products/:productId", async (req, res) => {
     );
 
     if (existingOrder.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ error: "Zamowienie o podanym identyfikatorze nie istnieje" });
+      const rfc7807Error = {
+        type: "https://example.com/docs/errors/not-found",
+        title: "Zamówienie o podanym ID nie istnieje",
+        instance: req.url,
+      };
+
+      return res.status(StatusCodes.NOT_FOUND).json(rfc7807Error);
     }
 
     const [existingProductInOrder] = await pool.query(
@@ -403,9 +554,13 @@ app.put("/orders/:orderId/products/:productId", async (req, res) => {
     );
 
     if (existingProductInOrder.length === 0) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        error: "Produkt o podanym identyfikatorze nie istnieje w zamówieniu",
-      });
+      const rfc7807Error = {
+        type: "https://example.com/docs/errors/not-found",
+        title: "Produkt o podanym ID nie istnieje w zamówieniu",
+        instance: req.url,
+      };
+
+      return res.status(StatusCodes.NOT_FOUND).json(rfc7807Error);
     }
 
     await pool.query(
@@ -413,12 +568,18 @@ app.put("/orders/:orderId/products/:productId", async (req, res) => {
       [quantity, orderId, productId]
     );
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (error) {
-    console.error("Błąd podczas edycji ilości produktu w zamówieniu:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    const rfc7807Error = {
+      type: "https://example.com/docs/errors/internal-server-error",
+      title:
+        "Wystąpił błąd podczas edytowania produktów w zamówieniu o ID " +
+        orderId,
+      detail: error,
+      instance: req.url,
+    };
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(rfc7807Error);
   }
 });
 
