@@ -3,6 +3,7 @@ const { json } = require("body-parser");
 const { createPool } = require("mysql2/promise");
 const { check, validationResult } = require("express-validator");
 const { StatusCodes, ReasonPhrases } = require("http-status-codes");
+const jsonPatch = require("fast-json-patch");
 
 const app = express();
 const port = 3000;
@@ -21,7 +22,6 @@ const pool = createPool(dbConfig);
 
 app.use(json());
 
-// Middleware do walidacji
 const validateProduct = [
   check("nazwa").notEmpty().withMessage("Nazwa produktu nie może być pusta"),
   check("opis").notEmpty().withMessage("Opis produktu nie może być pusty"),
@@ -47,11 +47,6 @@ const validateOrderPost = [
   check("numer_telefonu")
     .isNumeric()
     .withMessage("Numer telefonu użytkownika musi zawierać tylko cyfry"),
-  check("ilosc")
-    .isNumeric({ min: 1 })
-    .withMessage(
-      "Ilość produktów w zamówieniu musi być liczbą całkowitą większą od 0"
-    ),
 ];
 
 const validateOrderPatch = [
@@ -75,12 +70,6 @@ const validateOrderPatch = [
     .optional()
     .isNumeric()
     .withMessage("Numer telefonu użytkownika musi zawierać tylko cyfry"),
-  check("ilosc")
-    .optional()
-    .isNumeric({ min: 1 })
-    .withMessage(
-      "Ilość produktów w zamówieniu musi być liczbą całkowitą większą od 0"
-    ),
 ];
 // API Produktu
 app.get("/products", async (req, res) => {
@@ -127,13 +116,15 @@ app.post("/products", validateProduct, async (req, res) => {
   }
   const newProduct = req.body;
   try {
-    const [result] = await pool.execute("INSERT INTO produkt SET ?", [
+    const [result] = await pool.query("INSERT INTO produkt SET ?", [
       newProduct,
     ]);
     res.json({ productId: result.insertId });
   } catch (error) {
     console.error("Błąd podczas dodawania produktu:", error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send(req.body);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
   }
 });
 
@@ -197,11 +188,11 @@ app.get("/orders", async (req, res) => {
 });
 
 app.post("/orders", validateOrderPost, async (req, res) => {
-  const newOrder = req.body;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(StatusCodes.BAD_REQUEST).json({ errors: errors.array() });
   }
+  const newOrder = req.body;
 
   try {
     const [result] = await pool.query("INSERT INTO zamowienie SET ?", [
@@ -216,36 +207,30 @@ app.post("/orders", validateOrderPost, async (req, res) => {
   }
 });
 
-app.patch("/orders/:id", validateOrderPatch, async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(StatusCodes.BAD_REQUEST).json({ errors: errors.array() });
-  }
-
+app.patch("/orders/:id", async (req, res) => {
   const orderId = req.params.id;
-  const updatedOrder = req.body;
+  const jsonPatchOperations = req.body;
 
   try {
-    const [existingOrders] = await pool.query(
+    const [existingOrder] = await pool.query(
       "SELECT * FROM Zamowienie WHERE zamowienie_id = ?",
       [orderId]
     );
-    if (existingOrders.length === 0) {
+
+    if (existingOrder.length === 0) {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ error: "Zamowienie o podanym identyfikatorze nie istnieje" });
     }
 
     // SPRAWDZENIE CZY MOZNA ZMIENIC STAN ZAMOWIENIA
-    if (
-      existingOrders[0].stan_zamowienia_id > updatedOrder.stan_zamowienia_id
-    ) {
+    if (jsonPatchOperations.some(
+      (op) => op.path === "/stan_zamowienia_id" && op.value < existingOrder[0].stan_zamowienia_id)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ error: "Nie można zmienić statusu zamówienia wstecz" });
     }
 
-    // POBRANIE ID STANU ZAMOWIENIA ANULOWANEGO
     const [cancelledStatusId] = await pool.query(
       "SELECT * FROM stan_zamowienia WHERE nazwa = ?",
       ["ANULOWANE"]
@@ -253,45 +238,48 @@ app.patch("/orders/:id", validateOrderPatch, async (req, res) => {
 
     // SPRAWDZENIE CZY ZAMOWIENIE JEST ANULOWANE
     if (
-      existingOrders[0].stan_zamowienia_id ===
-      cancelledStatusId[0].stan_zamowienia_id
+      existingOrder[0].stan_zamowienia_id === cancelledStatusId[0].stan_zamowienia_id
     ) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ error: "Nie można zmienić statusu anulowanego zamówienia" });
     }
 
-    // POBRANIE ID STANU ZAMOWIENIA ZATWIERDZONEGO
     const [approvedStatus] = await pool.query(
       "SELECT * FROM stan_zamowienia WHERE nazwa = ?",
       ["ZATWIERDZONE"]
     );
 
-    // AKTUALIZACJA ZAMOWIENIA WRAZ Z DATA_ZATWIERDZENIA
-    if (updatedOrder.stan_zamowienia_id === approvedStatus[0].stan_zamowienia_id) {
-      updatedOrder.data_zatwierdzenia = new Date();
+    // Konwertuj operacje z JSON Patch na format zrozumiały przez fast-json-patch
+    const patchedOrder = jsonPatch.applyPatch(
+      existingOrder[0],
+      jsonPatchOperations
+    ).newDocument;
+
+    // Sprawdź, czy zmieniany jest stan na "ZATWIERDZONE"
+    if (
+      jsonPatchOperations.some(
+        (op) => op.path === "/stan_zamowienia_id" && op.value === approvedStatus[0].stan_zamowienia_id
+      )
+    ) {
+      // Ustaw kolumnę data_zatwierdzenia na aktualny czas
+      patchedOrder.data_zatwierdzenia = new Date();
     }
 
-    const columnsToUpdate = Object.keys(updatedOrder).map(
-      (key) => `${key} = ?`
-    );
-    const valuesToUpdate = Object.values(updatedOrder);
+    // Aktualizuj zamówienie w bazie danych zgodnie z operacjami z JSON Patch
+    await pool.query("UPDATE Zamowienie SET ? WHERE zamowienie_id = ?", [
+      patchedOrder,
+      orderId,
+    ]);
 
-    await pool.query(
-      `UPDATE zamowienie SET ${columnsToUpdate.join(
-        ", "
-      )} WHERE zamowienie_id = ?`,
-      [...valuesToUpdate, orderId]
-    );
     res.json({ success: true });
   } catch (error) {
-    console.error("Błąd podczas zmiany stanu zamówienia:", error);
+    console.error("Błąd podczas zmiany zamówienia:", error);
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .send(ReasonPhrases.INTERNAL_SERVER_ERROR);
   }
 });
-
 app.get("/orders/status/:id", async (req, res) => {
   const id = req.params.id;
   try {
@@ -352,7 +340,6 @@ app.post("/orders/:id/products", async (req, res) => {
   const newProductOrder = req.body;
 
   try {
-    // Sprawdź czy zamówienie istnieje
     const [existingOrder] = await pool.query(
       "SELECT * FROM zamowienie WHERE zamowienie_id = ?",
       [orderId]
@@ -364,7 +351,6 @@ app.post("/orders/:id/products", async (req, res) => {
         .json({ error: "Zamowienie o podanym identyfikatorze nie istnieje" });
     }
 
-    // Sprawdź czy produkt istnieje
     const [existingProduct] = await pool.query(
       "SELECT * FROM produkt WHERE produkt_id = ?",
       [newProductOrder.produkt_id]
@@ -373,10 +359,9 @@ app.post("/orders/:id/products", async (req, res) => {
     if (existingProduct.length === 0) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ error: "Produkt o podanym identyfikatorze nie istnieje",  });
+        .json({ error: "Produkt o podanym identyfikatorze nie istnieje" });
     }
 
-    // Dodaj produkt do zamówienia
     await pool.query("INSERT INTO produkt_zamowienie SET ?", [
       {
         zamowienie_id: orderId,
@@ -399,10 +384,8 @@ app.put("/orders/:orderId/products/:productId", async (req, res) => {
   const orderId = req.params.orderId;
   const productId = req.params.productId;
   const quantity = req.body.ilosc;
-  
 
   try {
-    // Sprawdź czy zamówienie istnieje
     const [existingOrder] = await pool.query(
       "SELECT * FROM zamowienie WHERE zamowienie_id = ?",
       [orderId]
@@ -414,7 +397,6 @@ app.put("/orders/:orderId/products/:productId", async (req, res) => {
         .json({ error: "Zamowienie o podanym identyfikatorze nie istnieje" });
     }
 
-    // Sprawdź czy produkt istnieje w zamówieniu
     const [existingProductInOrder] = await pool.query(
       "SELECT * FROM produkt_zamowienie WHERE zamowienie_id = ? AND produkt_id = ?",
       [orderId, productId]
@@ -426,7 +408,6 @@ app.put("/orders/:orderId/products/:productId", async (req, res) => {
       });
     }
 
-    // Zaktualizuj ilość produktu w zamówieniu
     await pool.query(
       "UPDATE produkt_zamowienie SET ilosc = ? WHERE zamowienie_id = ? AND produkt_id = ?",
       [quantity, orderId, productId]
